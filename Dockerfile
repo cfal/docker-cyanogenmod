@@ -16,32 +16,37 @@ RUN apt-get install -y g++-multilib gcc-multilib lib32ncurses5-dev lib32readline
 # Install additional packages which are useful for building Android
 RUN apt-get install -y ccache rsync tig
 RUN apt-get install -y android-tools-adb android-tools-fastboot
-RUN apt-get install -y bc bsdmainutils file screen
-RUN apt-get install -y bash-completion wget nano
+RUN apt-get install -y bc bsdmainutils file tmux
+RUN apt-get install -y bash-completion wget nano zsh
 
-RUN useradd cmbuild && rsync -a /etc/skel/ /home/cmbuild/
+RUN useradd -d /cm -s /bin/zsh cm && rsync -a /etc/skel/ /cm/
 
-RUN mkdir /home/cmbuild/bin
-RUN curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > /home/cmbuild/bin/repo
-RUN chmod a+x /home/cmbuild/bin/repo
+# Add zsh
+RUN git clone git://github.com/robbyrussell/oh-my-zsh.git /cm/.oh-my-zsh
+RUN cp -vf /cm/.oh-my-zsh/templates/zshrc.zsh-template /cm/.zshrc
+
+RUN mkdir /cm/bin
+RUN curl http://commondatastorage.googleapis.com/git-repo-downloads/repo > /cm/bin/repo
+RUN chmod a+x /cm/bin/repo
 
 # Add sudo permission
-RUN echo "cmbuild ALL=NOPASSWD: ALL" > /etc/sudoers.d/cmbuild
+RUN echo "cm ALL=NOPASSWD: ALL" > /etc/sudoers.d/cm
 
-ADD startup.sh /home/cmbuild/startup.sh
-RUN chmod a+x /home/cmbuild/startup.sh
+ADD .tmux.conf /cm/.tmux.conf
+ADD startup.sh /cm/startup.sh
+RUN chmod a+x /cm/startup.sh
 
 # Fix ownership
-RUN chown -R cmbuild:cmbuild /home/cmbuild
+RUN chown -v cm:cm /cm /cm/.tmux.conf /cm/.oh-my-zsh /cm/.zshrc /cm/startup.sh /cm/.profile
 
 # Set global variables
 ADD android-env-vars.sh /etc/android-env-vars.sh
 RUN echo "source /etc/android-env-vars.sh" >> /etc/bash.bashrc
 
-VOLUME /home/cmbuild/android
+VOLUME /cm/android
 VOLUME /srv/ccache
 
-CMD /home/cmbuild/startup.sh
+CMD /cm/startup.sh
 
-USER cmbuild
-WORKDIR /home/cmbuild/android
+USER cm
+WORKDIR /cm/android

@@ -2,12 +2,11 @@
 
 cd $(dirname $0)
 
-SOURCE=$(readlink -f $(pwd)/android)
-CCACHE=$(readlink -f $(pwd)/ccache)
-CONTAINER_HOME=/home/cmbuild
+SOURCE=$(pwd)/store
+CCACHE=$(pwd)/ccache
+CONTAINER_HOME=/cm
 CONTAINER=cyanogenmod
-REPOSITORY=stucki/cyanogenmod
-TAG=cm-13.0
+IMAGE_NAME=cm
 FORCE_BUILD=0
 PRIVILEGED=
 
@@ -32,7 +31,7 @@ mkdir -p $SOURCE
 mkdir -p $CCACHE
 
 # Build image if needed
-IMAGE_EXISTS=$(docker images $REPOSITORY)
+IMAGE_EXISTS=$(docker images $IMAGE_NAME)
 if [ $? -ne 0 ]; then
 	echo "docker command not found"
 	exit $?
@@ -41,8 +40,8 @@ elif [[ $FORCE_BUILD = 1 ]] || ! echo "$IMAGE_EXISTS" | grep -q "$TAG"; then
 	echo "Fetching Docker \"ubuntu\" image..."
 	docker pull ubuntu:14.04
 
-	echo "Building Docker image $REPOSITORY:$TAG..."
-	docker build -t $REPOSITORY:$TAG .
+	echo "Building Docker image..."
+	docker build -t $IMAGE_NAME .
 	OK=$?
 
 	# After successful build, delete existing containers
@@ -64,7 +63,7 @@ if [[ $IS_RUNNING == "true" ]]; then
 elif [[ $IS_RUNNING == "false" ]]; then
 	docker start -i $CONTAINER
 else
-	docker run $PRIVILEGED -v $SOURCE:$CONTAINER_HOME/android -v $CCACHE:/srv/ccache -i -t --name $CONTAINER $REPOSITORY:$TAG
+	docker run $PRIVILEGED -v $SOURCE:$CONTAINER_HOME/android -v $CCACHE:/srv/ccache -i -t --name $CONTAINER $IMAGE_NAME $@
 fi
 
 exit $?
